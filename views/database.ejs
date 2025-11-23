@@ -1,0 +1,50 @@
+
+<section class="page-section" id="database">
+    <div class="container px-4 px-lg-5">
+        <div class="row gx-4 gx-lg-5 justify-content-center">
+            <div class="col-lg-10">
+                <h2 class="text-center mt-0">Adatbázis</h2>
+                <hr class="divider" />
+                <p class="text-muted text-center mb-4">
+                    Itt jelenik meg az adatbázis tartalma. Ide teheted a táblákat, listákat vagy diagramokat.
+                </p>
+                
+                    
+                        
+                        <div class="container mt-5">
+                            <h2 class="text-center mb-4"><%= title %></h2>
+
+                            <% if (!rows || rows.length === 0) { %>
+                                <div class="alert alert-info text-center">
+                                    Nincs megjeleníthető adat.
+                                </div>
+                            <% } else { %>
+
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <% for (let col in rows[0]) { %>
+                                            <th><%= col %></th>
+                                        <% } %>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% rows.forEach(row => { %>
+                                        <tr>
+                                            <% for (let col in row) { %>
+                                                <td><%= row[col] %></td>
+                                            <% } %>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+
+                            <% } %>
+                        </div>
+
+                    
+                
+            </div>
+        </div>
+    </div>
+</section>

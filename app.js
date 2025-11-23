@@ -6,6 +6,7 @@ const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session);
 const crypto = require('crypto');
 const bodyParser = require("body-parser");
+const expressLayouts = require('express-ejs-layouts');
 
 var indexRouter = require('./routes/index');
 
@@ -18,13 +19,14 @@ const app = express();
 
 app.set('views', path.join(__dirname, 'views'));
 app.set("view engine", "ejs");
+app.set('layout', 'layout');
 
-app.use('/', indexRouter);
+app.use(expressLayouts);
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Body parserek (hogy tudjuk olvasni a POST adatokat)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Session Beállítása (Használja a behúzott 'connection'-t)
 app.use(session({
@@ -47,6 +49,14 @@ app.use((req, res, next) => {
     console.log("\nKérés: " + req.url);
     //console.log("Session:", req.session);
     //console.log("User:", req.user);
+    next();
+});
+
+// Globális változók a layouthoz, hogy minden nézet ugyanazokat az adatokat megkapja
+app.use((req, res, next) => {
+    res.locals.isAuth = req.isAuthenticated();
+    res.locals.isAdmin = req.isAuthenticated() && req.user?.isAdmin == 1;
+    res.locals.username = req.isAuthenticated() ? req.user.username : "";
     next();
 });
 
@@ -116,8 +126,11 @@ passport.deserializeUser(function(userId, done) {
 
 // --- 5. ÚTVONALAK (ROUTES) ---
 
+// Külső router (pl. /database oldal)
+app.use('/', indexRouter);
+
 // Főoldal
-app.get('/', (req, res, next) => {
+app.get(['/', '/home'], (req, res, next) => {
     let auth = false;
     let username = "";
     let admin = false;
@@ -130,13 +143,39 @@ app.get('/', (req, res, next) => {
         admin = true;
     }
 
-    res.render("index", {
-        title: "Web2 Labor", // Ez hiányzott korábban az index.ejs-hez
-        isAuth: auth, 
-        isAdmin: admin, 
+    res.render("home", {
+        layout: "layout",
+        title: "Web2 Labor",
+        isAuth: auth,
+        isAdmin: admin,
         username: username
-   });
+    });
 });
+
+// kapcsolat
+app.get('/contact', (req, res, next) => {
+    let auth = false;
+    let username = "";
+    let admin = false;
+
+    if (req.isAuthenticated()) {
+        auth = true;
+        username = req.user.username;
+    }
+    if (req.isAuthenticated() && req.user.isAdmin == 1) {
+        admin = true;
+    }
+
+    res.render("contact", {
+        layout: "layout",
+        title: "Web2-Kapcsolat",
+        isAuth: auth,
+        isAdmin: admin,
+        username: username
+    });
+});
+
+
 
 // Csak akkor engedjük megnyitni, ha 'isAuth' (be van lépve)
 app.get('/messages', isAuth, (req, res, next) => {
