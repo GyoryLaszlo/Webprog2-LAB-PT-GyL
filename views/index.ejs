@@ -17,7 +17,7 @@
         <link href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css" rel="stylesheet" />
         <!-- Core theme CSS (includes Bootstrap)-->
         <link rel="stylesheet" href="/stylesheets/style.css">
-        <script src="/javascripts/app.js"></script>
+        
     </head>
     <body id="page-top">
         <!-- Navigation-->
@@ -34,26 +34,46 @@
                 <div class="collapse navbar-collapse" id="navbarResponsive">
                     <ul class="navbar-nav ms-auto my-2 my-lg-0">
                         <li class="nav-item"><a class="nav-link" href="#about">Főoldal</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#services">Adatbázis</a></li>
+                        <li class="nav-item"><a class="nav-link" href="database">Adatbázis</a></li>
                         <li class="nav-item"><a class="nav-link" href="#contact">Kapcsolat</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#messages">Üzenetek</a></li>
+                        <% if (isAuth) { %>
+                            <li class="nav-item"><a class="nav-link" href="messages">Üzenetek</a></li>
+                        <% } %>
                         <li class="nav-item"><a class="nav-link" href="#crud">CRUD</a></li>
+                        <% if (isAdmin) { %>
+                            <li class="nav-item"><a class="nav-link" href="admin">Admin</a></li>
+                        <% } %>
                     </ul>
 
                     <!-- Jobb oldali gombok -->
-                    <div class="d-flex ms-lg-3 mt-3 mt-lg-0 gap-2">
-                        <button class="btn btn-outline-primary btn-sm"
-                                type="button"
-                                data-bs-toggle="modal"
-                                data-bs-target="#loginModal">
-                            Bejelentkezés
-                        </button>
-                        <button class="btn btn-primary btn-sm"
-                                type="button"
-                                data-bs-toggle="modal"
-                                data-bs-target="#registerModal">
-                            Regisztráció
-                        </button>
+                    <div class="d-flex ms-lg-3 mt-3 mt-lg-0 gap-2 align-items-center">
+                        
+                        <% if (isAuth) { %>
+                            <span class="me-2 text-muted small">Szia, <strong><%= username %></strong>!</span>
+
+                            <% if (isAdmin) { %>
+                                <a href="/admin-route" class="btn btn-warning btn-sm">Admin</a>
+                            <% } %>
+
+                            <a href="/logout" class="btn btn-outline-danger btn-sm">Kilépés</a>
+
+                        <% } else { %>
+                            
+                            <button class="btn btn-outline-primary btn-sm"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#loginModal">
+                                Bejelentkezés
+                            </button>
+                            <button class="btn btn-primary btn-sm"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#registerModal">
+                                Regisztráció
+                            </button>
+
+                        <% } %>
+
                     </div>
                 </div>
             </div>
@@ -270,6 +290,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
                     </div>
                     <div class="modal-body">
+                        <div id="loginAlert" class="alert alert-danger d-none" role="alert"></div>
+
                         <form id="loginForm">
                             <div class="mb-3">
                                 <label for="loginEmail" class="form-label">E-mail cím</label>
@@ -295,6 +317,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
                     </div>
                     <div class="modal-body">
+                        <div id="registerAlert" class="alert alert-danger d-none" role="alert"></div>
+
                         <form id="registerForm">
                             <div class="mb-3">
                                 <label for="regEmail" class="form-label">E-mail cím</label>
@@ -318,12 +342,95 @@
         <footer class="bg-light py-5">
             <div class="container px-4 px-lg-5"><div class="small text-center text-muted">Copyright &copy; 2023 - Company Name</div></div>
         </footer>
+        <script>
+            document.getElementById('registerForm').addEventListener('submit', function(e) {
+                e.preventDefault(); // Ne frissüljön az oldal hagyományosan
+
+                const emailField = document.getElementById('regEmail');
+                const passField = document.getElementById('regPassword');
+                const passConfirmField = document.getElementById('regPassword2');
+                const alertBox = document.getElementById('registerAlert');
+
+                // 1. Jelszó egyezés ellenőrzése
+                if (passField.value !== passConfirmField.value) {
+                    alertBox.textContent = "A két jelszó nem egyezik!";
+                    alertBox.classList.remove('d-none');
+                    return;
+                }
+
+                // 2. Adatok küldése a szervernek
+                // Fontos: a szervered 'uname' és 'pw' neveket vár a korábbi kódod alapján!
+                fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        uname: emailField.value, 
+                        pw: passField.value 
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // SIKER: Újratöltjük az oldalt, és a felhasználó be lesz jelentkezve
+                        window.location.reload();
+                    } else {
+                        // HIBA: Kiírjuk a modalba (pl. Foglalt név)
+                        alertBox.textContent = data.message || "Hiba történt.";
+                        alertBox.classList.remove('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alertBox.textContent = "Szerver hiba történt.";
+                    alertBox.classList.remove('d-none');
+                });
+            });
+            </script>
+            <script>
+                document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Megakadályozza, hogy az oldal újratöltődjön
+
+    const emailField = document.getElementById('loginEmail');
+    const passField = document.getElementById('loginPassword');
+    const alertBox = document.getElementById('loginAlert');
+
+    // Adatok küldése a szervernek JSON formátumban
+    fetch('/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            uname: emailField.value, 
+            pw: passField.value 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Ha sikeres a belépés, frissítjük az oldalt
+            window.location.reload();
+        } else {
+            // Ha hiba van (pl. rossz jelszó), kiírjuk a modalba
+            alertBox.textContent = data.message || "Hibás felhasználónév vagy jelszó!";
+            alertBox.classList.remove('d-none');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alertBox.textContent = "Szerver hiba történt.";
+        alertBox.classList.remove('d-none');
+    });
+});
+            </script>
         <!-- Bootstrap core JS-->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
         <!-- SimpleLightbox plugin JS-->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.js"></script>
         <!-- Core theme JS-->
-        <script src="js/scripts.js"></script>
+        <script src="javascripts/scripts.js"></script>
         <script src="https://cdn.startbootstrap.com/sb-forms-latest.js"></script>
     </body>
 </html>

@@ -1,10 +1,9 @@
 var express = require('express');
 var router = express.Router();
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  res.render('index', { title: 'ReNew' });
+
+router.get('/database', function(req, res, next) {
+  res.render('database', { title: 'ReNew' });
 });
 
 module.exports = router;
-
