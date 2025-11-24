@@ -194,6 +194,7 @@ app.get('/messages', isAuth, (req, res, next) => {
 app.get('/admin', isAdmin, (req, res, next) => {
     // Itt rendereld le az üzenetek oldalt, vagy amit szeretnél
     res.render("admin", {
+        title: "Admin felület",
         username: req.user.username,
         isAuth:true,
         isAdmin: (req.user.isAdmin == 1)
