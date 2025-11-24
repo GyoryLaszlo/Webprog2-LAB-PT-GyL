@@ -24,6 +24,10 @@ app.set('layout', 'layout');
 app.use(expressLayouts);
 app.use(express.static(path.join(__dirname, 'public')));
 
+// üzenetküldő használata
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 // Body parserek (hogy tudjuk olvasni a POST adatokat)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

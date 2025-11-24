@@ -43,4 +43,62 @@ router.get('/database', function(req, res, next) {
   });
 });
 
+// Kapcsolat oldal megjelenítés
+router.get('/contact', (req, res) => {
+  res.render("contact", {
+    layout: "layout",
+    title: "Kapcsolat",
+    messageSent: false,
+    isAuth: req.isAuthenticated ? req.isAuthenticated() : false,
+    isAdmin: req.user && req.user.isAdmin == 1,
+    username: req.user ? req.user.username : ""
+  });
+});
+
+// Üzenet mentése
+router.post('/contact', (req, res, next) => {
+    const { nev, email, telefon, uzenet } = req.body;
+
+    // VALIDÁCIÓ: üres mezők ellenőrzése
+    if (!nev || !email || !uzenet) {
+        return res.render('contact', {
+            layout: "layout",
+            title: "Kapcsolat",
+            contactError: true,
+            contactSuccess: false,
+            errorMessage: "A név, email és üzenet mező kitöltése kötelező!"
+        });
+    }
+
+    const sql = `
+        INSERT INTO uzenetek (nev, email, telefon, uzenet)
+        VALUES (?, ?, ?, ?)
+    `;
+
+    connection.query(sql, [nev, email, telefon, uzenet], (err, result) => {
+        if (err) {
+            console.error("Kapcsolat mentési hiba:", err);
+            // Itt egyszerűen visszadobjuk a főoldalt hibaüzenettel
+            return res.render('contact', {
+                title: 'Web2 Labor',
+                isAuth: req.isAuthenticated ? req.isAuthenticated() : false,
+                isAdmin: req.user && req.user.isAdmin == 1,
+                username: req.user ? req.user.username : "",
+                contactError: true,
+                contactSuccess: false
+            });
+        }
+
+        // Sikeres mentés után visszatöltjük a főoldalt siker üzenettel
+        res.render('contact', {
+            title: 'Web2 Labor',
+            isAuth: req.isAuthenticated ? req.isAuthenticated() : false,
+            isAdmin: req.user && req.user.isAdmin == 1,
+            username: req.user ? req.user.username : "",
+            contactError: false,
+            contactSuccess: true
+        });
+    });
+});
+
 module.exports = router;
